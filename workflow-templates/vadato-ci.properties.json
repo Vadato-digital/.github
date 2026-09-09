@@ -1,0 +1,7 @@
+{
+  "name": "CI Vadato",
+  "description": "Scan des secrets sur tout l'historique et vérification du projet (lint, types, tests, build). Requis par la règle main protegee.",
+  "iconName": "shield-check",
+  "categories": ["JavaScript", "TypeScript", "Python"],
+  "filePatterns": ["package.json$", "pyproject.toml$", "requirements.txt$"]
+}

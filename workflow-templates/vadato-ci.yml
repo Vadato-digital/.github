@@ -1,0 +1,41 @@
+name: CI
+
+# Modèle de workflow Vadato : à ajouter aux dépôts qui n'ont pas été créés depuis app-template.
+# Le job s'appelle "verification" : c'est le nom que la règle "main protegee" attend.
+
+on:
+  pull_request:
+  push:
+    branches: [ $default-branch ]
+
+permissions:
+  contents: read
+
+jobs:
+  verification:
+    name: verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Installation de gitleaks (version épinglée, somme de contrôle vérifiée)
+        env:
+          GITLEAKS_VERSION: "8.30.1"
+          GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+        run: |
+          set -euo pipefail
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSL -o /tmp/gitleaks.tgz "$url"
+          echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tgz" | sha256sum -c -
+          mkdir -p /tmp/gitleaks && tar -xzf /tmp/gitleaks.tgz -C /tmp/gitleaks
+          sudo install -m 0755 /tmp/gitleaks/gitleaks /usr/local/bin/gitleaks
+
+      - name: Scan des secrets sur tout l'historique
+        run: gitleaks git --no-banner --redact
+
+      - name: Vérification du projet (si le script existe)
+        run: |
+          if [ -x scripts/verifier.sh ]; then bash scripts/verifier.sh --ci; else echo "pas de scripts/verifier.sh : rien de plus à vérifier"; fi
